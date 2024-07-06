@@ -11,18 +11,27 @@
 
 <body>
     <div class="container-fluid">
-        <div class="row border-bottom py-4">
-            <div class="col-12 d-flex flex-column align-items-center justify-content-center">
-                <img src="assets/img/icon.png" alt="Foto do Usuário" class="w-25 rounded-3">
-                <div class="mt-2">Nome do Usuário</div>
+
+        <!-- Header -->
+        <div class="row border-bottom py-4 d-flex align-items-center">
+            <div class="col-3 text-center">
+                <img src="assets/img/icon.png" alt="Foto do Usuário" class="rounded-3" style="width: 60%;">
+            </div>
+            <div class="col-6 text-center">
+                <div class="mt-2">Nome da barbearia</div>
+            </div>
+            <div class="col-3 text-center">
+                <a href="assets/html/agendamentos.html" class="btn btn-secondary btn-sm" role="button">Meus
+                    agendados</a>
+                </button>
             </div>
         </div>
 
-        <h3 class="text-center mt-3">O que deseja?</h3>
+        <h3 class="text-center mt-4 mb-3">O que deseja?</h3>
 
         <div class="list-group">
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="cabelo">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -37,7 +46,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="Sobrancelha">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -52,7 +61,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="barba">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -67,7 +76,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="pigmentacao">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -82,7 +91,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="luzes">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -97,7 +106,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="reflexo">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -112,7 +121,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="platinado">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -127,7 +136,7 @@
                 </span>
             </label>
             <label class="list-group-item d-flex gap-2 align-items-center">
-                <input class="form-check-input flex-shrink-0" type="checkbox" value="">
+                <input class="form-check-input flex-shrink-0" type="checkbox" value="sopezinho">
                 <span class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-column justify-content-start">
                         <div class="row">
@@ -142,10 +151,46 @@
                 </span>
             </label>
         </div>
+
+        <div class="w-100 d-flex justify-content-center my-4">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                onclick="getSelectedCheckboxes()">Continuar →
+            </button>
+        </div>
+
+        <!-- Modal 
+        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="staticBackdropLabel">Resumo</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary">Agendar data</button>
+                    </div>
+                </div>
+            </div>
+        </div>-->
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+    <script>
+        function getSelectedCheckboxes() {
+            // Seleciona todos os checkboxes que estão marcados
+            const selectedCheckboxes = document.querySelectorAll('.form-check-input:checked');
+
+            // Itera sobre os checkboxes marcados e loga os valores no console
+            selectedCheckboxes.forEach(checkbox => {
+                console.log(`Serviço selecionado: ${checkbox.value}`);
+            });
+        }
+    </script>
 </body>
 
 </html>
