@@ -56,22 +56,22 @@
             <ul class="list-group list-group-horizontal">
                 <li class="list-group-item border border-0 text-center">
                     <div class="">
-                        <img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
-                            alt="profile barbershop">
+                        <!--<img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
+                            alt="profile barbershop">-->
                         <p class="d-block w-100">Gustavo</p>
                     </div>
                 </li>
                 <li class="list-group-item border border-0 text-center">
                     <div class="">
-                        <img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
-                            alt="profile barbershop">
+                        <!--<img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
+                            alt="profile barbershop">-->
                         <p>Gustavo</p>
                     </div>
                 </li>
                 <li class="list-group-item border border-0 text-center">
                     <div class="">
-                        <img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
-                            alt="profile barbershop">
+                        <!--<img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
+                            alt="profile barbershop">-->
                         <p>Gustavo</p>
                     </div>
                 </li>
@@ -103,15 +103,8 @@
 
         <div class="w-100 border-bottom d-flex flex-column align-items-center py-3">
             <p class="text-center mb-3">Horários disponíveis</p>
-            <div class="btn-group gap-2 rounded-circle" role="group">
-                <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off">
-                <label class="btn btn-outline-primary" for="btnradio1">10:00</label>
-
-                <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off">
-                <label class="btn btn-outline-primary" for="btnradio2">11:00</label>
-
-                <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off">
-                <label class="btn btn-outline-primary" for="btnradio3">12:00</label>
+            <div class="btn-group gap-2 rounded-circle" role="group" id="horarios-container">
+                <!-- Os horários serão inseridos aqui dinamicamente -->
             </div>
         </div>
 
@@ -132,7 +125,8 @@
                             Resumo aqui
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continar agendamento</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continar
+                                agendamento</button>
                             <button type="button" class="btn btn-primary">Finalizar</button>
                         </div>
                     </div>
@@ -149,6 +143,7 @@
         const datesElement = document.getElementById('dates');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const horariosContainer = document.getElementById('horarios-container');
 
         let currentDate = new Date();
         let selectedDate = new Date();
@@ -175,9 +170,51 @@
                 dateElement.addEventListener('click', (e) => {
                     selectedDate = new Date(e.target.getAttribute('data-date'));
                     updateCalendar();
+
+                    // Formata a data para o formato que seu backend espera (YYYY-MM-DD)
+                    const formattedDate = selectedDate.toISOString().split('T')[0];
+                    
+                    // Faz a requisição AJAX para buscar os horários disponíveis
+                    fetch('/horarios', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ date: formattedDate })
+                    })
+                    .then(response => {
+                        return response.json()
+                    })
+                    .then(data => {
+                        updateAvailableTimes(data); // Função para atualizar os horários na interface
+                    })
+                    .catch(error => console.error('Error:', error));
                 });
             });
         }
+
+        const updateAvailableTimes = (horarios) => {
+            // Limpa os horários antigos
+            horariosContainer.innerHTML = '';
+
+            // Adiciona os novos horários
+            horarios.forEach(horario => {
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.className = 'btn-check';
+                input.name = 'btnradio';
+                input.id = `btnradio${horario.id}`;
+                input.autocomplete = 'off';
+
+                const label = document.createElement('label');
+                label.className = 'btn btn-outline-primary';
+                label.htmlFor = `btnradio${horario.id}`;
+                label.textContent = horario.hora;
+
+                horariosContainer.appendChild(input);
+                horariosContainer.appendChild(label);
+            });
+        };
 
         prevBtn.addEventListener('click', () => {
             currentDate.setDate(currentDate.getDate() - 7);
