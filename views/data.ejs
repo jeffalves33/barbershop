@@ -146,52 +146,76 @@
         const horariosContainer = document.getElementById('horarios-container');
 
         let currentDate = new Date();
+        console.log('currentDate: ', currentDate)
         let selectedDate = new Date();
 
         const updateCalendar = () => {
             const currentYear = currentDate.getFullYear();
             const currentMonth = currentDate.getMonth();
 
+            // Define o mês e ano no topo do calendário
             const monthYearString = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
             monthYearElement.textContent = monthYearString;
 
             let datesHTML = '';
 
+            // Obtém o primeiro dia da semana da data atual
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Ajusta para começar na segunda-feira
+
+            // Preenche 7 dias da semana
             for (let i = 0; i < 7; i++) {
-                const date = new Date(currentDate);
-                date.setDate(currentDate.getDate() + i);
+                const date = new Date(startOfWeek);
+                date.setDate(startOfWeek.getDate() + i);
+
+                const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0)); // Compara com o início do dia atual
                 const activeClass = date.toDateString() === selectedDate.toDateString() ? 'active' : '';
-                datesHTML += `<div class="date ${activeClass}" data-date="${date}">${date.getDate()}</div>`;
+                const inactiveClass = date.getMonth() !== currentMonth ? 'inactive' : '';
+                const disabledClass = isPastDate ? 'disabled' : '';
+
+                datesHTML += `<div class="date ${activeClass} ${inactiveClass} ${disabledClass}" data-date="${date}">${date.getDate()}</div>`;
             }
 
             datesElement.innerHTML = datesHTML;
 
             document.querySelectorAll('.date').forEach(dateElement => {
-                dateElement.addEventListener('click', (e) => {
-                    selectedDate = new Date(e.target.getAttribute('data-date'));
-                    updateCalendar();
+                if (!dateElement.classList.contains('disabled')) {
+                    dateElement.addEventListener('click', (e) => {
+                        selectedDate = new Date(e.target.getAttribute('data-date'));
+                        updateCalendar();
 
-                    // Formata a data para o formato que seu backend espera (YYYY-MM-DD)
-                    const formattedDate = selectedDate.toISOString().split('T')[0];
-                    
-                    // Faz a requisição AJAX para buscar os horários disponíveis
-                    fetch('/horarios', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ date: formattedDate })
-                    })
-                    .then(response => {
-                        return response.json()
-                    })
-                    .then(data => {
-                        updateAvailableTimes(data); // Função para atualizar os horários na interface
-                    })
-                    .catch(error => console.error('Error:', error));
-                });
+                        // Formata a data para o formato que seu backend espera (YYYY-MM-DD)
+                        const formattedDate = selectedDate.toISOString().split('T')[0];
+
+                        // Faz a requisição AJAX para buscar os horários disponíveis
+                        fetch('/horarios', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ date: formattedDate })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                updateAvailableTimes(data); // Função para atualizar os horários na interface
+                            })
+                            .catch(error => console.error('Error:', error));
+                    });
+                }
             });
-        }
+        };
+
+        prevBtn.addEventListener('click', () => {
+            // Subtrai 7 dias da data atual para voltar uma semana
+            currentDate.setDate(currentDate.getDate() - 7);
+            updateCalendar();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            // Adiciona 7 dias à data atual para avançar uma semana
+            currentDate.setDate(currentDate.getDate() + 7);
+            updateCalendar();
+        });
 
         const updateAvailableTimes = (horarios) => {
             // Limpa os horários antigos
@@ -215,16 +239,6 @@
                 horariosContainer.appendChild(label);
             });
         };
-
-        prevBtn.addEventListener('click', () => {
-            currentDate.setDate(currentDate.getDate() - 7);
-            updateCalendar();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            currentDate.setDate(currentDate.getDate() + 7);
-            updateCalendar();
-        });
 
         updateCalendar();
     </script>
