@@ -110,7 +110,7 @@
 
         <div class="w-100 d-flex justify-content-center my-4">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-                onclick="">Finalizar agendamento
+                onclick="resumoAgendamento()">Finalizar agendamento
             </button>
             <!-- Modal -->
             <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
@@ -118,15 +118,31 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Finalizar agendamento</h1>
+                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Resumo</h1>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
-                            Resumo aqui
+                        <div class="modal-body p-0">
+                            <ul class="list-group" id="listBuy">
+                                <li class="list-group-item d-flex justify-content-between lh-condensed">
+                                    <div>
+                                        <h6 class="mb-1">Serviços</h6>
+                                        <p class="text-muted mb-0 text-body-secondary">Cabelo</p>
+                                        <p class="text-muted mb-0 text-body-secondary">Barba</p>
+                                        <p class="text-muted mb-0 text-body-secondary">Pigmentação</p>
+                                    </div>
+                                    <span class="text-muted">R$ 12,00</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between lh-condensed">
+                                    <div>
+                                        <h6 class="mb-1">Data e Horário</h6>
+                                        <p class="text-muted mb-0 text-body-secondary">05 de Agosto, quinta-feira</p>
+                                    </div>
+                                    <span class="text-muted">10:00</span>
+                                </li>
+                            </ul>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continar
-                                agendamento</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Editar</button>
                             <button type="button" class="btn btn-primary">Finalizar</button>
                         </div>
                     </div>
@@ -146,7 +162,6 @@
         const horariosContainer = document.getElementById('horarios-container');
 
         let currentDate = new Date();
-        console.log('currentDate: ', currentDate)
         let selectedDate = new Date();
 
         const updateCalendar = () => {
@@ -234,6 +249,7 @@
                 label.className = 'btn btn-outline-primary';
                 label.htmlFor = `btnradio${horario.id}`;
                 label.textContent = horario.hora;
+                label.addEventListener('click', () => localStorage.setItem('selectedTime', JSON.stringify(horario.hora)));
 
                 horariosContainer.appendChild(input);
                 horariosContainer.appendChild(label);
@@ -241,6 +257,47 @@
         };
 
         updateCalendar();
+
+        function resumoAgendamento() {
+            // Obtendo os dados do localStorage
+            const selectedServices = JSON.parse(localStorage.getItem("selectedServices")); //serviços selecionados
+            const valuesFromSelectedServices = JSON.parse(localStorage.getItem("valuesFromSelectedServices")); //valores dos serviços
+            const selectedTime = JSON.parse(localStorage.getItem('selectedTime')); //horário selecionado
+            const dateString = new Date(document.querySelector('.date.active').getAttribute('data-date')); //data selecionada
+
+            // Formatando a data selecionada
+            const selectedDay = `${dateString.getDate()} de ${dateString.toLocaleString('pt-BR', { month: 'long' })}, ${dateString.toLocaleString('pt-BR', { weekday: 'long' })}`;
+
+            // Calculando o valor total dos serviços
+            const totalValue = valuesFromSelectedServices.reduce((acc, val) => acc + val, 0).toFixed(2).replace('.', ',');
+
+            // Construindo o HTML dinâmico
+            let elementHtml = `
+                <li class="list-group-item d-flex justify-content-between lh-condensed">
+                    <div>
+                        <h6 class="mb-1">Serviços</h6>
+            `;
+            selectedServices.forEach(service => {
+                elementHtml += `<p class="text-muted mb-0 text-body-secondary">${service}</p>`;
+            });
+            elementHtml += `
+                    </div>
+                    <span class="text-muted">R$ ${totalValue}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between lh-condensed">
+                    <div>
+                        <h6 class="mb-1">Data e Horário</h6>
+                        <p class="text-muted mb-0 text-body-secondary">${selectedDay}</p>
+                    </div>
+                    <span class="text-muted">${selectedTime}</span>
+                </li>
+            `;
+
+            // Inserindo o HTML no modal
+            const bodyModal = document.getElementById("listBuy");
+            bodyModal.innerHTML = elementHtml;
+        }
+
     </script>
 </body>
 

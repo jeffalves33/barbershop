@@ -52,6 +52,34 @@ app.post('/horarios', (req, res) => {
     });
 });
 
+app.get('/servicos', (req, res) => {
+    connection.query('SELECT * FROM servicos', (err, results) => {
+        if (err) throw err;
+        //if (err) return res.status(500).json({ error: 'Erro ao buscar serviços' });
+        // Função para formatar o tempo
+        function formatTimeDuration(time) {
+            const [hours, minutes, seconds] = time.split(':').map(Number);
+
+            if (hours > 0 && minutes > 0) {
+                return `${hours} hora${hours > 1 ? 's' : ''} e ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                return `${hours} hora${hours > 1 ? 's' : ''}`;
+            } else {
+                return `${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            }
+        }
+
+        // Formata o tempo de cada serviço
+        const formattedResults = results.map(service => {
+            return {
+                ...service,
+                tempo: formatTimeDuration(service.tempo_aparente)
+            };
+        });
+
+        res.json(formattedResults);
+    });
+});
 
 // Rota para agendar
 app.post('/agendar', (req, res) => {
