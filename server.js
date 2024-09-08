@@ -1,5 +1,9 @@
+require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
+
+// Create a single supabase client for interacting with your database
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const express = require('express');
-const mysql = require('mysql2');
 const path = require('path');
 
 const app = express();
@@ -13,50 +17,25 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Conexão com o banco de dados
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '6142',
-    database: 'barbearia'
-});
-
-connection.connect((err) => {
-    if (err) throw err;
-    console.log('Conectado ao banco de dados MySQL');
-});
 
 // Rota para a página inicial
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Rota para a página de seleção de horário
-app.get('/data', (req, res) => {
-    connection.query('SELECT * FROM horarios', (err, results) => {
-        if (err) throw err;
-        res.render('data', { horarios: results });
-    });
-});
+app.get('/servicos/:idPerfil', async (req, res) => {
+    const { idPerfil } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Servicos')
+            .select('*')
+            .eq('idPerfil', idPerfil);
 
-app.post('/horarios', (req, res) => {
-    const { date } = req.body;
-
-    // Supondo que você tenha uma função que busca os horários no banco de dados
-    const query = 'SELECT id, DATE_FORMAT(hora, "%H:%i") AS hora FROM horarios WHERE dia = ? AND disponivel = 1';
-    connection.query(query, [date], (error, results) => {
         if (error) {
-            return res.status(500).json({ error: 'Erro ao buscar horários' });
+            console.error('Erro ao buscar dados:', error);
+            return res.status(500).json({ error: 'Erro ao buscar serviços' });
         }
-        res.json(results);
-    });
-});
 
-app.get('/servicos', (req, res) => {
-    connection.query('SELECT * FROM servicos', (err, results) => {
-        if (err) throw err;
-        //if (err) return res.status(500).json({ error: 'Erro ao buscar serviços' });
-        // Função para formatar o tempo
         function formatTimeDuration(time) {
             const [hours, minutes, seconds] = time.split(':').map(Number);
 
@@ -69,28 +48,45 @@ app.get('/servicos', (req, res) => {
             }
         }
 
-        // Formata o tempo de cada serviço
-        const formattedResults = results.map(service => {
-            return {
-                ...service,
-                tempo: formatTimeDuration(service.tempo_aparente)
-            };
-        });
+        const formattedResults = data.map(service => ({
+            ...service,
+            tempo: formatTimeDuration(service.tempo_real)
+        }));
 
         res.json(formattedResults);
-    });
+    } catch (error) {
+        console.error('Erro inesperado:', error.message);
+        res.status(500).json({ error: 'Erro inesperado ao buscar dados' });
+    }
 });
 
-// Rota para agendar
-app.post('/agendar', (req, res) => {
-    const horarioId = req.body.horarioId;
+// Rota para buscar dados do perfil no Supabase
+app.get('/perfil/:idPerfil', async (req, res) => {
+    const { idPerfil } = req.params;
 
-    // Atualiza o banco de dados para marcar o horário como ocupado
-    connection.query('UPDATE horarios SET ocupado = TRUE WHERE id = ?', [horarioId], (err) => {
-        if (err) throw err;
-        res.send('Agendamento realizado com sucesso!');
-    });
+    try {
+        // Faz a consulta à tabela "Perfis" no Supabase
+        const { data, error } = await supabase
+            .from('Perfis')
+            .select('*')
+            .eq('idPerfil', idPerfil)
+            .single();
+
+        if (error) throw error;
+        if (data) res.json(data);
+        else res.status(404).send('Perfil não encontrado');
+
+
+    } catch (error) {
+        console.error('Erro ao buscar o perfil:', error.message);
+        res.status(500).send('Erro ao buscar o perfil'); // Retorna erro genérico ao cliente
+    }
 });
+
+app.get('/agendamentos', (req, res) => {
+    res.render('agendamentos');
+});
+
 
 app.listen(port, () => {
     console.log(`Servidor rodando em http://localhost:${port}`);

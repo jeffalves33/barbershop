@@ -11,19 +11,36 @@
 
 <body>
     <div class="container-fluid">
+        <!-- Popup para autenticação -->
+        <div id="authPopup" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="authModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="authModalLabel">Autenticação</h5>
+                    </div>
+                    <div class="modal-body">
+                        <label for="phoneNumber">Digite seu número de celular:</label>
+                        <input type="text" id="phoneNumber" class="form-control" placeholder="Número de celular">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="submitPhone">Autenticar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Header -->
         <div class="row border-bottom py-3 px-2 d-flex align-items-center">
             <div class="col-3 text-center">
-                <img src="" alt="Foto do Usuário" class="rounded-3" style="width: 60%;">
+                <img id="profilePhoto" src="" alt="Foto do Usuário" class="rounded-3" style="width: 70%;">
             </div>
             <div class="col-6 text-center">
-                <div class="mt-2">Nome da barbearia</div>
+                <div id="barberName" class="mt-2">Nome da barbearia</div>
             </div>
             <div class="col-3 text-center">
-                <a href="assets/html/agendamentos.html" class="btn btn-secondary btn-sm" role="button">Meus
+                <a href="/agendamentos" class="btn btn-secondary btn-sm" role="button">Meus
                     agendados</a>
-                </button>
             </div>
         </div>
 
@@ -32,8 +49,9 @@
         <div class="list-group" id="list-group"></div>
 
         <div class="w-100 d-flex justify-content-center my-4">
-            <a href="/data" class="btn btn-primary" onclick="getSelectedCheckboxes()">Continuar →</a>
+            <a href="#" class="btn btn-primary" id="continueButton">Continuar →</a>
         </div>
+
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -42,38 +60,58 @@
         let objServices = new Object();
 
         function getSelectedCheckboxes() {
+            if (!localStorage.getItem('authUser') || localStorage.getItem('authUser').trim() === '') {
+                // Abre o popup de autenticação
+                let authModal = new bootstrap.Modal(document.getElementById('authPopup'));
+                authModal.show();
+            } else {
+                // Já autenticado, procede com a seleção dos checkboxes
+                processSelectedCheckboxes();
+                // Redireciona para a rota 'data'
+                window.location.href = '/data';
+            }
+        }
+
+        function processSelectedCheckboxes() {
             // Seleciona todos os checkboxes que estão marcados
             const selectedCheckboxes = document.querySelectorAll('.form-check-input:checked');
-            const selectedServices = [];
-            const valuesFromSelectedServices = [];
+            const selectedIds = [];
 
-            // Itera sobre os checkboxes marcados e armazena os valores em um array
+            // Itera sobre os checkboxes marcados e armazena os IDs em um array
             selectedCheckboxes.forEach(checkbox => {
-                selectedServices.push(checkbox.value);
-                valuesFromSelectedServices.push(objServices.find(service => service.nome === checkbox.value).valor);
+                selectedIds.push(checkbox.value);
             });
 
-            // Armazena o array de serviços no localStorage
-            localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
-            localStorage.setItem('valuesFromSelectedServices', JSON.stringify(valuesFromSelectedServices));
+            // Armazena o array de IDs no localStorage
+            localStorage.setItem('selectedServiceIds', JSON.stringify(selectedIds));
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/servicos')
+            const idPerfil = '8d6fabce-1722-4ce0-b124-83b798a1ce5e';
+
+            fetch(`/perfil/${idPerfil}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('profilePhoto').src = data.fotoPerfil;
+                    document.getElementById('barberName').innerText = data.nome;
+                })
+                .catch(error => console.error('Erro ao buscar o perfil: ', error));
+
+            fetch(`/servicos/${idPerfil}`)
                 .then(response => response.json())
                 .then(data => {
                     const servicesList = document.getElementById('list-group');
                     objServices = data;
+
                     servicesList.innerHTML = data.map(service => `
                         <label class="list-group-item d-flex gap-2 align-items-center service-item">
-                            <input class="form-check-input flex-shrink-0" type="checkbox" value="${service.nome}">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" value="${service.id}">
                             <span class="w-100 d-flex justify-content-between align-items-center">
                                 <div class="d-flex flex-column justify-content-start">
                                     <div class="row">
                                         <h6>${service.nome}</h6>
                                     </div>
                                     <div class="d-flex align-items-center">
-                                        <img src="" alt="Foto do Usuário" class="rounded-3">
                                         <h6 class="text-secondary m-2">${service.tempo}</h6>
                                     </div>
                                 </div>
@@ -83,6 +121,40 @@
                     `).join('');
                 })
                 .catch(error => console.error('Error:', error));
+
+            // Intercepta o clique no botão "Continuar"
+            const continueButton = document.getElementById('continueButton');
+            if (continueButton) {
+                continueButton.addEventListener('click', function (event) {
+                    event.preventDefault(); // Impede o redirecionamento imediato
+                    getSelectedCheckboxes(); // Chama a função que trata a autenticação e o redirecionamento
+                });
+            }
+
+            // Autentica o usuário e armazena no localStorage
+            const submitPhoneButton = document.getElementById('submitPhone');
+            if (submitPhoneButton) {
+                submitPhoneButton.addEventListener('click', () => {
+                    const phoneNumber = document.getElementById('phoneNumber').value;
+
+                    if (phoneNumber.trim() !== '') {
+                        // Simula uma autenticação
+                        localStorage.setItem('authUser', phoneNumber);
+                        console.log("Usuário autenticado com sucesso:", phoneNumber);
+
+                        // Fecha o popup de autenticação
+                        let authModal = bootstrap.Modal.getInstance(document.getElementById('authPopup'));
+                        authModal.hide();
+
+                        // Após autenticação, executa o resto da função
+                        processSelectedCheckboxes();
+                        // Redireciona para a rota 'data'
+                        window.location.href = '/data';
+                    } else {
+                        alert("Por favor, insira um número de celular válido.");
+                    }
+                });
+            }
         });
     </script>
 
