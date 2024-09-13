@@ -50,33 +50,7 @@
 <body>
     <div class="container-fluid">
         <!-- Header -->
-
-        <div class="w-100 border-bottom align-items-center py-3">
-            <p class="text-center mb-3">Barbeiro</p>
-            <ul class="list-group list-group-horizontal">
-                <li class="list-group-item border border-0 text-center">
-                    <div class="">
-                        <!--<img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
-                            alt="profile barbershop">-->
-                        <p class="d-block w-100">Gustavo</p>
-                    </div>
-                </li>
-                <li class="list-group-item border border-0 text-center">
-                    <div class="">
-                        <!--<img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
-                            alt="profile barbershop">-->
-                        <p>Gustavo</p>
-                    </div>
-                </li>
-                <li class="list-group-item border border-0 text-center">
-                    <div class="">
-                        <!--<img src="../img/icon.png" class="img-thumbnail border border-info-subtle w-25"
-                            alt="profile barbershop">-->
-                        <p>Gustavo</p>
-                    </div>
-                </li>
-            </ul>
-        </div>
+        <h3 class="text-center mt-4 mb-3">Seus agendados</h3>
 
         <div class="d-flex flex-column p-2 border-bottom py-3">
             <div class="d-flex justify-content-between align-items-center p-2">
@@ -103,7 +77,7 @@
 
         <div class="w-100 border-bottom d-flex flex-column align-items-center py-3">
             <p class="text-center mb-3">Horários disponíveis</p>
-            <div class="btn-group gap-2 rounded-circle" role="group" id="horarios-container">
+            <div class="btn-group gap-2 rounded-circle" role="group" id="horarios">
                 <!-- Os horários serão inseridos aqui dinamicamente -->
             </div>
         </div>
@@ -282,6 +256,27 @@
             bodyModal.innerHTML = elementHtml;
         }
 
+        // Função para buscar os horários disponíveis e exibi-los
+        async function carregarHorarios() {
+            try {
+                const response = await fetch('/horarios-disponiveis');
+                const horarios = await response.json();
+
+                // Exibir os horários
+                const horariosDiv = document.getElementById('horarios');
+                horarios.forEach(horario => {
+                    let horarioItem = document.createElement('button');
+                    horarioItem.innerText = horario;
+                    horarioItem.onclick = () => agendarHorario(horario);
+                    horariosDiv.appendChild(horarioItem);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar horários:', error);
+            }
+        }
+
+        // Carregar os horários quando a página carregar
+        window.onload = carregarHorarios;
     </script>
 </body>
 

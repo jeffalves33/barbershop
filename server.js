@@ -19,8 +19,49 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // Rota para a página inicial
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+app.get('/:barbearia/:barbeiro', async (req, res) => {
+    const [barbearia, barbeiro] = [req.params.barbearia, req.params.barbeiro];
+    let perfil;
+    try {
+        const { data, error } = await supabase
+            .from('Perfis')
+            .select('*')
+            .eq('nickname', barbeiro);
+        if (error) return res.status(500).json({ error: 'Erro ao buscar perfil' });
+        perfil = data[0];
+    } catch (error) {
+        res.status(500).send('Erro ao buscar o perfil');
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('Servicos')
+            .select('*')
+            .eq('idPerfil', perfil.idPerfil);
+        if (error) return res.status(500).json({ error: 'Erro ao buscar serviços 1' });
+
+        function formatTimeDuration(time) {
+            const [hours, minutes, seconds] = time.split(':').map(Number);
+
+            if (hours > 0 && minutes > 0) {
+                return `${hours} hora${hours > 1 ? 's' : ''} e ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                return `${hours} hora${hours > 1 ? 's' : ''}`;
+            } else {
+                return `${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            }
+        }
+
+        const formattedResults = data.map(service => ({
+            ...service,
+            tempo: formatTimeDuration(service.tempo_real)
+        }));
+
+        res.render('index', { perfil: perfil, servicos: formattedResults });
+
+    } catch (error) { 
+        return res.status(500).json({ error: 'Erro ao buscar serviços 2' }); 
+    }
 });
 
 app.get('/servicos/:idPerfil', async (req, res) => {
@@ -60,33 +101,32 @@ app.get('/servicos/:idPerfil', async (req, res) => {
     }
 });
 
-// Rota para buscar dados do perfil no Supabase
-app.get('/perfil/:idPerfil', async (req, res) => {
-    const { idPerfil } = req.params;
-
-    try {
-        // Faz a consulta à tabela "Perfis" no Supabase
-        const { data, error } = await supabase
-            .from('Perfis')
-            .select('*')
-            .eq('idPerfil', idPerfil)
-            .single();
-
-        if (error) throw error;
-        if (data) res.json(data);
-        else res.status(404).send('Perfil não encontrado');
-
-
-    } catch (error) {
-        console.error('Erro ao buscar o perfil:', error.message);
-        res.status(500).send('Erro ao buscar o perfil'); // Retorna erro genérico ao cliente
-    }
-});
-
 app.get('/agendamentos', (req, res) => {
     res.render('agendamentos');
 });
 
+app.get('/data', (req, res) => {
+    res.render('data');
+});
+
+// Exemplo de rota para horários disponíveis
+app.get('/horarios-disponiveis', async (req, res) => {
+    // Definir o horário de abertura e fechamento
+    const horarioAbertura = 9; // 9:00 AM
+    const horarioFechamento = 18; // 6:00 PM
+    const duracao = 30; // 30 minutos por corte
+    let horariosDisponiveis = [];
+
+    // Gerar os slots de horários
+    for (let hora = horarioAbertura; hora < horarioFechamento; hora++) {
+        horariosDisponiveis.push(`${hora}:00`);
+        horariosDisponiveis.push(`${hora}:30`);
+    }
+
+    // Aqui você pode buscar do banco de dados os horários já ocupados e filtrá-los
+
+    res.json(horariosDisponiveis);
+});
 
 app.listen(port, () => {
     console.log(`Servidor rodando em http://localhost:${port}`);
