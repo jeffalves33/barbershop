@@ -57,55 +57,55 @@ app.get('/:barbearia/:barbeiro', async (req, res) => {
             tempo: formatTimeDuration(service.tempo_real)
         }));
 
-        res.render('index', { perfil: perfil, servicos: formattedResults });
+        res.render('index', { barbearia: barbearia, barbeiro: barbeiro, perfil: perfil, servicos: formattedResults });
 
-    } catch (error) { 
-        return res.status(500).json({ error: 'Erro ao buscar serviços 2' }); 
+    } catch (error) {
+        return res.status(500).json({ error: 'Erro ao buscar serviços 2' });
     }
 });
 
-app.get('/servicos/:idPerfil', async (req, res) => {
-    const { idPerfil } = req.params;
+/*app.get('/:barbearia/:barbeiro/datas', async (req, res) => {
+    const barbeiro = req.params.barbeiro;
+    let idPerfil, defaultConfig;
+
     try {
         const { data, error } = await supabase
-            .from('Servicos')
-            .select('*')
-            .eq('idPerfil', idPerfil);
-
-        if (error) {
-            console.error('Erro ao buscar dados:', error);
-            return res.status(500).json({ error: 'Erro ao buscar serviços' });
-        }
-
-        function formatTimeDuration(time) {
-            const [hours, minutes, seconds] = time.split(':').map(Number);
-
-            if (hours > 0 && minutes > 0) {
-                return `${hours} hora${hours > 1 ? 's' : ''} e ${minutes} minuto${minutes > 1 ? 's' : ''}`;
-            } else if (hours > 0) {
-                return `${hours} hora${hours > 1 ? 's' : ''}`;
-            } else {
-                return `${minutes} minuto${minutes > 1 ? 's' : ''}`;
-            }
-        }
-
-        const formattedResults = data.map(service => ({
-            ...service,
-            tempo: formatTimeDuration(service.tempo_real)
-        }));
-
-        res.json(formattedResults);
+            .from('Perfis')
+            .select('idPerfil')
+            .eq('nickname', barbeiro);
+        if (error) return res.status(500).json({ error: 'Erro ao buscar perfil' });
+        idPerfil = data[0].idPerfil;
     } catch (error) {
-        console.error('Erro inesperado:', error.message);
-        res.status(500).json({ error: 'Erro inesperado ao buscar dados' });
+        res.status(500).send('Erro ao buscar o perfil');
     }
-});
 
-app.get('/agendamentos', (req, res) => {
-    res.render('agendamentos');
-});
+    try {
+        const { data, error } = await supabase
+            .from('Padroes')
+            .select('intervaloPadrao, horarioInicioPadrao, horarioFimPadrao')
+            .eq('idPerfil', idPerfil);
+        if (error) return res.status(500).json({ error: 'Erro ao buscar configurações padrões' });
+        defaultConfig = data[0];
+    } catch (error) {
+        res.status(500).send('Erro ao buscar configurações padrões');
+    }
 
-app.get('/data', (req, res) => {
+    try {
+        const hoje = new Date().toLocaleDateString('en-CA');
+        console.log("hoje: ", hoje);
+        const { data, error } = await supabase
+            .from('Horarios')
+            .select('horaInicio, horaFim, dia')
+            .eq('idPerfil', idPerfil);
+        if (error) return res.status(500).json({ error: 'Erro ao buscar horários' });
+    } catch (error) {
+        res.status(500).send('Erro ao buscar horários');
+    }
+
+    res.render('data');
+});*/
+
+app.get('/:barbearia/:barbeiro/datas', (req, res) => {
     res.render('data');
 });
 

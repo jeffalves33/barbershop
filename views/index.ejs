@@ -33,20 +33,51 @@
         <!-- Header -->
         <div class="row border-bottom py-3 px-2 d-flex align-items-center">
             <div class="col-3 text-center">
-                <img id="profilePhoto" src="" alt="Foto do Usuário" class="rounded-3" style="width: 70%;">
+                <img id="profilePhoto" src="<%= perfil.fotoPerfil %>" alt="Foto do Usuário" class="rounded-3"
+                    style="width: 70%;">
             </div>
             <div class="col-6 text-center">
-                <div id="barberName" class="mt-2">Nome da barbearia</div>
+                <div class="mt-2">
+                    <%= barbearia %>
+                </div>
+                <div class="mt-2">
+                    <%= perfil.nome %>
+                </div>
             </div>
             <div class="col-3 text-center">
-                <a href="/agendamentos" class="btn btn-secondary btn-sm" role="button">Meus
+                <a href="" class="btn btn-secondary btn-sm" role="button">Meus
                     agendados</a>
             </div>
         </div>
 
         <h3 class="text-center mt-4 mb-3">O que deseja?</h3>
 
-        <div class="list-group" id="list-group"></div>
+        <div class="list-group">
+            <div class="list-group">
+                <% servicos.forEach(servico=> { %>
+                    <label class="list-group-item d-flex gap-2 align-items-center service-item">
+                        <input class="form-check-input flex-shrink-0" type="checkbox" value="<%= servico.id %>">
+                        <span class="w-100 d-flex justify-content-between align-items-center">
+                            <div class="d-flex flex-column justify-content-start">
+                                <div class="row">
+                                    <h6>
+                                        <%= servico.nome %>
+                                    </h6>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <h6 class="text-secondary m-2">
+                                        <%= servico.tempo %>
+                                    </h6>
+                                </div>
+                            </div>
+                            <span class="badge text-bg-primary rounded-pill">
+                                R$ <%= servico.valor.toFixed(2).replace('.', ',' ) %>
+                            </span>
+                        </span>
+                    </label>
+                    <% }) %>
+            </div>
+        </div>
 
         <div class="w-100 d-flex justify-content-center my-4">
             <a href="#" class="btn btn-primary" id="continueButton">Continuar →</a>
@@ -57,7 +88,7 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
     <script>
-        /*let objServices = new Object();
+        let objServices = new Object();
 
         function getSelectedCheckboxes() {
             if (!localStorage.getItem('authUser') || localStorage.getItem('authUser').trim() === '') {
@@ -68,7 +99,8 @@
                 // Já autenticado, procede com a seleção dos checkboxes
                 processSelectedCheckboxes();
                 // Redireciona para a rota 'data'
-                window.location.href = '/data';
+                window.location.href = `/<%= barbearia %>/<%= barbeiro %>/datas`;
+
             }
         }
 
@@ -87,41 +119,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const idPerfil = '8d6fabce-1722-4ce0-b124-83b798a1ce5e';
-
-            fetch(`/perfil/${idPerfil}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('profilePhoto').src = data.fotoPerfil;
-                    document.getElementById('barberName').innerText = data.nome;
-                })
-                .catch(error => console.error('Erro ao buscar o perfil: ', error));
-
-            fetch(`/servicos/${idPerfil}`)
-                .then(response => response.json())
-                .then(data => {
-                    const servicesList = document.getElementById('list-group');
-                    objServices = data;
-
-                    servicesList.innerHTML = data.map(service => `
-                        <label class="list-group-item d-flex gap-2 align-items-center service-item">
-                            <input class="form-check-input flex-shrink-0" type="checkbox" value="${service.id}">
-                            <span class="w-100 d-flex justify-content-between align-items-center">
-                                <div class="d-flex flex-column justify-content-start">
-                                    <div class="row">
-                                        <h6>${service.nome}</h6>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <h6 class="text-secondary m-2">${service.tempo}</h6>
-                                    </div>
-                                </div>
-                                <span class="badge text-bg-primary rounded-pill">R$ ${service.valor.toFixed(2).replace('.', ',')}</span>
-                            </span>
-                        </label>
-                    `).join('');
-                })
-                .catch(error => console.error('Error:', error));
-
             // Intercepta o clique no botão "Continuar"
             const continueButton = document.getElementById('continueButton');
             if (continueButton) {
@@ -140,7 +137,6 @@
                     if (phoneNumber.trim() !== '') {
                         // Simula uma autenticação
                         localStorage.setItem('authUser', phoneNumber);
-                        console.log("Usuário autenticado com sucesso:", phoneNumber);
 
                         // Fecha o popup de autenticação
                         let authModal = bootstrap.Modal.getInstance(document.getElementById('authPopup'));
@@ -155,7 +151,7 @@
                     }
                 });
             }
-        });*/
+        });
     </script>
 
 </body>
