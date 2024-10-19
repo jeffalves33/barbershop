@@ -50,15 +50,13 @@ function gerarHorariosDisponiveis(horarioInicioDia, horarioFimDia, duracaoSessao
         return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     }
 
-    if (dia > dataAtual) horarioAtual = horarioInicioDia;
-
     // Percorrer os horários de acordo com o intervalo definido
     while (horarioAtual < horarioFimDia) {
 
         let horarioFim = adicionarMinutos(horarioAtual, duracaoEmMinutos);
 
         // Verificar se o horário atual é antes da hora atual (do sistema)
-        if (horarioAtual >= horarioAtualStr) {
+        if ((horarioAtual >= horarioAtualStr) || (dia > dataAtual)) {
             // Verificar se o horário atual está nos horários ocupados ou no intervalo de almoço (se existir)
             const estaNoIntervaloDeAlmoco = horarioIntervalo && (horarioAtual >= inicioIntervalo && horarioAtual < fimIntervalo);
             if (!horariosOcupados.includes(horarioAtual) && !estaNoIntervaloDeAlmoco) {
