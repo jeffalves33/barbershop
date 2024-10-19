@@ -17,6 +17,69 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+function gerarHorariosDisponiveis(horarioInicioDia, horarioFimDia, duracaoSessao, horariosOcupados, dia, horarioIntervalo = null) {
+    // Obter o horário atual
+    const today = new Date();
+    const dataAtual = today.toISOString().split('T')[0];
+
+    const horarioAtualAgora = new Date();
+    const horarioAtualStr = `${String(horarioAtualAgora.getHours()).padStart(2, "0")}:${String(horarioAtualAgora.getMinutes()).padStart(2, "0")}`;
+
+    // Converter horas e minutos da duração da sessão para minutos totais
+    const [hours, minutes] = duracaoSessao.split(":");
+    const duracaoEmMinutos = parseInt(hours) * 60 + parseInt(minutes);
+
+    // Verificar se existe um intervalo de almoço
+    let inicioIntervalo = null;
+    let fimIntervalo = null;
+    if (horarioIntervalo) {
+        inicioIntervalo = horarioIntervalo[0];
+        fimIntervalo = horarioIntervalo[1];
+    }
+    let horariosDisponiveis = [];
+    let horariosDisponiveisCompletos = [];
+    let horarioAtual = horarioInicioDia;
+
+    // Função auxiliar para adicionar minutos a um horário no formato HH:mm
+    function adicionarMinutos(horario, minutos) {
+        let [h, m] = horario.split(":").map(Number);
+        m += minutos;
+        h += Math.floor(m / 60);
+        m = m % 60;
+        h = h % 24; // Evitar ultrapassar 24 horas
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+
+    if (dia > dataAtual) horarioAtual = horarioInicioDia;
+
+    // Percorrer os horários de acordo com o intervalo definido
+    while (horarioAtual < horarioFimDia) {
+
+        let horarioFim = adicionarMinutos(horarioAtual, duracaoEmMinutos);
+
+        // Verificar se o horário atual é antes da hora atual (do sistema)
+        if (horarioAtual >= horarioAtualStr) {
+            // Verificar se o horário atual está nos horários ocupados ou no intervalo de almoço (se existir)
+            const estaNoIntervaloDeAlmoco = horarioIntervalo && (horarioAtual >= inicioIntervalo && horarioAtual < fimIntervalo);
+            if (!horariosOcupados.includes(horarioAtual) && !estaNoIntervaloDeAlmoco) {
+                horariosDisponiveis.push(`${horarioAtual}`)
+                horariosDisponiveisCompletos.push(`${horarioAtual} até ${horarioFim}`);
+            }
+        }
+
+        // Avançar o horário atual para o próximo intervalo
+        horarioAtual = adicionarMinutos(horarioAtual, duracaoEmMinutos);
+    }
+    //Horários completos está em horariosDisponiveisCompletos
+    //Horários somente inicio está em horariosDisponiveis
+    return horariosDisponiveis;
+}
+
+function diaSemana(dia) {
+    const data = new Date(dia);
+    const diasDaSemana = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+    return diasDaSemana[data.getDay()];
+}
 
 // Rota para a página inicial
 app.get('/:barbearia/:barbeiro', async (req, res) => {
@@ -27,10 +90,10 @@ app.get('/:barbearia/:barbeiro', async (req, res) => {
             .from('Perfis')
             .select('*')
             .eq('nickname', barbeiro);
-        if (error) return res.status(500).json({ error: 'Erro ao buscar perfil' });
+        if (error) return res.status(500).json({ error: 'Erro interno ao buscar perfil' });
         perfil = data[0];
     } catch (error) {
-        res.status(500).send('Erro ao buscar o perfil');
+        res.status(500).send('Erro externo ao buscar o perfil');
     }
 
     try {
@@ -60,74 +123,76 @@ app.get('/:barbearia/:barbeiro', async (req, res) => {
         res.render('index', { barbearia: barbearia, barbeiro: barbeiro, perfil: perfil, servicos: formattedResults });
 
     } catch (error) {
-        return res.status(500).json({ error: 'Erro ao buscar serviços 2' });
+        return res.status(500).json({ error: 'Erro nos Serviços' });
     }
 });
 
-/*app.get('/:barbearia/:barbeiro/datas', async (req, res) => {
-    const barbeiro = req.params.barbeiro;
-    let idPerfil, defaultConfig;
+app.get('/:barbearia/:barbeiro/data', async (req, res) => {
+    res.render('data');
+});
 
+app.post('/horarios-disponiveis', async (req, res) => {
+    const { dia, barbeiro, barbearia } = req.body;
+    let idPerfil, semanaBarbeiro;
+
+    // Busca o usuário
     try {
         const { data, error } = await supabase
             .from('Perfis')
             .select('idPerfil')
             .eq('nickname', barbeiro);
-        if (error) return res.status(500).json({ error: 'Erro ao buscar perfil' });
-        idPerfil = data[0].idPerfil;
+        if (error) return res.status(500).json({ error: 'Erro interno ao buscar perfil' });
+        idPerfil = data[0]['idPerfil'];
     } catch (error) {
-        res.status(500).send('Erro ao buscar o perfil');
+        res.status(500).send('Erro externo ao buscar o perfil');
     }
 
+    // Busca a configuração da semana do barbeiro
     try {
-        const { data, error } = await supabase
-            .from('Padroes')
-            .select('intervaloPadrao, horarioInicioPadrao, horarioFimPadrao')
+        const { data: semana, error: semanaError } = await supabase
+            .from('Dias_Semana')
+            .select('*')
             .eq('idPerfil', idPerfil);
-        if (error) return res.status(500).json({ error: 'Erro ao buscar configurações padrões' });
-        defaultConfig = data[0];
+        if (semanaError) return res.status(500).json({ error: 'Erro interno ao buscar semana' });
+        semanaBarbeiro = semana[0];
     } catch (error) {
-        res.status(500).send('Erro ao buscar configurações padrões');
+        res.status(500).send('Erro externo ao buscar semana');
     }
 
+    // Se o dia escolhido for um dia do estabelecimento estar fechado
+    if (!semanaBarbeiro[diaSemana(dia)]) {
+        return res.json([]);
+    }
+
+    // Buscar horários ocupados
     try {
-        const hoje = new Date().toLocaleDateString('en-CA');
-        console.log("hoje: ", hoje);
         const { data, error } = await supabase
             .from('Horarios')
-            .select('horaInicio, horaFim, dia')
-            .eq('idPerfil', idPerfil);
-        if (error) return res.status(500).json({ error: 'Erro ao buscar horários' });
+            .select('horaInicio')
+            .eq('idPerfil', idPerfil)
+            .eq('dia', dia)
+        if (error) {
+            return res.status(500).json({ error: 'Erro ao buscar horários ocupados' });
+        }
+        const horariosOcupados = data.map(item => item.horaInicio.slice(0, 5));
+        const horarioInicioDia = semanaBarbeiro['horaAbertura'].slice(0, 5);
+        const horarioFimDia = semanaBarbeiro['horaFechamento'].slice(0, 5);
+        const duracaoSessao = semanaBarbeiro['intervaloServicos'].slice(0, 5);
+        let horariosDisponiveis;
+        if (semanaBarbeiro['almocoInicio'] && semanaBarbeiro['almocoFim']) {
+            const horarioIntervalo = [semanaBarbeiro['almocoInicio'].slice(0, 5), semanaBarbeiro['almocoFim'].slice(0, 5)];
+            horariosDisponiveis = gerarHorariosDisponiveis(horarioInicioDia, horarioFimDia, duracaoSessao, horariosOcupados, dia, horarioIntervalo)
+        } else {
+            horariosDisponiveis = gerarHorariosDisponiveis(horarioInicioDia, horarioFimDia, duracaoSessao, horariosOcupados, dia)
+        }
+
+        res.json(horariosDisponiveis);
+
     } catch (error) {
-        res.status(500).send('Erro ao buscar horários');
+        res.status(500).json({ error: 'Erro ao processar a solicitação' });
     }
-
-    res.render('data');
-});*/
-
-app.get('/:barbearia/:barbeiro/datas', (req, res) => {
-    res.render('data');
-});
-
-// Exemplo de rota para horários disponíveis
-app.get('/horarios-disponiveis', async (req, res) => {
-    // Definir o horário de abertura e fechamento
-    const horarioAbertura = 9; // 9:00 AM
-    const horarioFechamento = 18; // 6:00 PM
-    const duracao = 30; // 30 minutos por corte
-    let horariosDisponiveis = [];
-
-    // Gerar os slots de horários
-    for (let hora = horarioAbertura; hora < horarioFechamento; hora++) {
-        horariosDisponiveis.push(`${hora}:00`);
-        horariosDisponiveis.push(`${hora}:30`);
-    }
-
-    // Aqui você pode buscar do banco de dados os horários já ocupados e filtrá-los
-
-    res.json(horariosDisponiveis);
 });
 
 app.listen(port, () => {
-    console.log(`Servidor rodando em http://localhost:${port}`);
+    console.log(`Servidor rodando em http://localhost:${port}/barbearia/jeffadas`);
 });

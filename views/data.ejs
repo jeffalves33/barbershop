@@ -77,7 +77,7 @@
 
         <div class="w-100 border-bottom d-flex flex-column align-items-center py-3">
             <p class="text-center mb-3">Horários disponíveis</p>
-            <div class="btn-group gap-2 rounded-circle" role="group" id="horarios">
+            <div class="gap-2 d-flex flex-wrap" role="group" id="horarios">
                 <!-- Os horários serão inseridos aqui dinamicamente -->
             </div>
         </div>
@@ -117,10 +117,10 @@
         const datesElement = document.getElementById('dates');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
-        const horariosContainer = document.getElementById('horarios-container');
+        const horariosContainer = document.getElementById('horarios');
 
         let currentDate = new Date();
-        let selectedDate = new Date();
+        let selectedDate = null;
 
         const updateCalendar = () => {
             const currentYear = currentDate.getFullYear();
@@ -142,7 +142,7 @@
                 date.setDate(startOfWeek.getDate() + i);
 
                 const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0)); // Compara com o início do dia atual
-                const activeClass = date.toDateString() === selectedDate.toDateString() ? 'active' : '';
+                const activeClass = (selectedDate && date.toDateString() === selectedDate.toDateString()) ? 'active' : '';
                 const inactiveClass = date.getMonth() !== currentMonth ? 'inactive' : '';
                 const disabledClass = isPastDate ? 'disabled' : '';
 
@@ -154,25 +154,29 @@
             document.querySelectorAll('.date').forEach(dateElement => {
                 if (!dateElement.classList.contains('disabled')) {
                     dateElement.addEventListener('click', (e) => {
-                        selectedDate = new Date(e.target.getAttribute('data-date'));
+                        selectedDate = new Date(e.target.getAttribute('data-date')); // Atualiza a data selecionada
                         updateCalendar();
 
                         // Formata a data para o formato que seu backend espera (YYYY-MM-DD)
                         const formattedDate = selectedDate.toISOString().split('T')[0];
+                        const currentDate = new Date();
 
                         // Faz a requisição AJAX para buscar os horários disponíveis
-                        fetch('/horarios', {
+                        const urlParts = window.location.pathname.split('/'); // Divide a URL em partes
+                        fetch('/horarios-disponiveis', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({ date: formattedDate })
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                updateAvailableTimes(data); // Função para atualizar os horários na interface
+                            body: JSON.stringify({
+                                dia: formattedDate,
+                                barbeiro: urlParts[urlParts.length - 2],  // Chama a função para obter o nome do barbeiro
+                                barbearia: urlParts[urlParts.length - 3] // Chama a função para obter o nome da barbearia
                             })
-                            .catch(error => console.error('Error:', error));
+                        })
+                        .then(response => response.json()) // Adicionado return para a promise de JSON
+                        .then(data => updateAvailableTimes(data)) // Função para atualizar os horários na interface
+                        .catch(error => console.error('Error AJAX Request:', error));
                     });
                 }
             });
@@ -190,93 +194,26 @@
             updateCalendar();
         });
 
-        const updateAvailableTimes = (horarios) => {
-            // Limpa os horários antigos
+        const updateAvailableTimes = (times) => {
+            // Limpa os horários atuais
             horariosContainer.innerHTML = '';
 
-            // Adiciona os novos horários
-            horarios.forEach(horario => {
-                const input = document.createElement('input');
-                input.type = 'radio';
-                input.className = 'btn-check';
-                input.name = 'btnradio';
-                input.id = `btnradio${horario.id}`;
-                input.autocomplete = 'off';
+            if (times.length === 0) {
+                horariosContainer.innerHTML = '<div class="text-center">Nenhum horário disponível.</div>';
+                return; // Se não houver horários, retorna
+            }
 
-                const label = document.createElement('label');
-                label.className = 'btn btn-outline-primary';
-                label.htmlFor = `btnradio${horario.id}`;
-                label.textContent = horario.hora;
-                label.addEventListener('click', () => localStorage.setItem('selectedTime', JSON.stringify(horario.hora)));
-
-                horariosContainer.appendChild(input);
-                horariosContainer.appendChild(label);
+            // Atualiza a interface com os horários disponíveis
+            times.forEach(time => {
+                const timeButton = document.createElement('button');
+                timeButton.className = 'btn btn-secondary';
+                timeButton.innerText = time;
+                horariosContainer.appendChild(timeButton);
             });
         };
 
+        // Inicializa o calendário
         updateCalendar();
-
-        function resumoAgendamento() {
-            // Obtendo os dados do localStorage
-            const selectedServices = JSON.parse(localStorage.getItem("selectedServices")); //serviços selecionados
-            const valuesFromSelectedServices = JSON.parse(localStorage.getItem("valuesFromSelectedServices")); //valores dos serviços
-            const selectedTime = JSON.parse(localStorage.getItem('selectedTime')); //horário selecionado
-            const dateString = new Date(document.querySelector('.date.active').getAttribute('data-date')); //data selecionada
-
-            // Formatando a data selecionada
-            const selectedDay = `${dateString.getDate()} de ${dateString.toLocaleString('pt-BR', { month: 'long' })}, ${dateString.toLocaleString('pt-BR', { weekday: 'long' })}`;
-
-            // Calculando o valor total dos serviços
-            const totalValue = valuesFromSelectedServices.reduce((acc, val) => acc + val, 0).toFixed(2).replace('.', ',');
-
-            // Construindo o HTML dinâmico
-            let elementHtml = `
-                <li class="list-group-item d-flex justify-content-between lh-condensed">
-                    <div>
-                        <h6 class="mb-1">Serviços</h6>
-            `;
-            selectedServices.forEach(service => {
-                elementHtml += `<p class="text-muted mb-0 text-body-secondary">${service}</p>`;
-            });
-            elementHtml += `
-                    </div>
-                    <span class="text-muted">R$ ${totalValue}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between lh-condensed">
-                    <div>
-                        <h6 class="mb-1">Data e Horário</h6>
-                        <p class="text-muted mb-0 text-body-secondary">${selectedDay}</p>
-                    </div>
-                    <span class="text-muted">${selectedTime}</span>
-                </li>
-            `;
-
-            // Inserindo o HTML no modal
-            const bodyModal = document.getElementById("listBuy");
-            bodyModal.innerHTML = elementHtml;
-        }
-
-        // Função para buscar os horários disponíveis e exibi-los
-        async function carregarHorarios() {
-            try {
-                const response = await fetch('/horarios-disponiveis');
-                const horarios = await response.json();
-
-                // Exibir os horários
-                const horariosDiv = document.getElementById('horarios');
-                horarios.forEach(horario => {
-                    let horarioItem = document.createElement('button');
-                    horarioItem.innerText = horario;
-                    horarioItem.onclick = () => agendarHorario(horario);
-                    horariosDiv.appendChild(horarioItem);
-                });
-            } catch (error) {
-                console.error('Erro ao carregar horários:', error);
-            }
-        }
-
-        // Carregar os horários quando a página carregar
-        window.onload = carregarHorarios;
     </script>
 </body>
 
